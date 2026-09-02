@@ -12,4 +12,4 @@ Set A midterm project.
 ## Links
 
 - GitHub: https://github.com/JeromeCaraballa/midterms_caraballa
-- Vercel: add after deployment
+- Vercel: https://midterm-eight-tau.vercel.app
