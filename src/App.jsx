@@ -161,7 +161,7 @@ function App() {
     <main className="app-shell">
       <section className="hero-panel">
         <div>
-          <h1>Playlist Tracker</h1>
+          <h1>Spotify Track Playlist</h1>
         </div>
         <div className="playlist-stat">
           <span>{tracks.length}</span>
