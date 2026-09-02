@@ -161,12 +161,7 @@ function App() {
     <main className="app-shell">
       <section className="hero-panel">
         <div>
-          <p className="eyebrow">Set A</p>
           <h1>Playlist Tracker</h1>
-          <p className="hero-copy">
-            Save tracks for a Spotify-style playlist and keep the entries ready
-            for review.
-          </p>
         </div>
         <div className="playlist-stat">
           <span>{tracks.length}</span>
@@ -177,7 +172,6 @@ function App() {
       <section className="workspace">
         <form className="track-form" onSubmit={saveTrack} noValidate>
           <div className="section-heading">
-            <p className="eyebrow">Phase 1</p>
             <h2>Track Registration</h2>
           </div>
 
@@ -264,7 +258,6 @@ function App() {
         {tracks.length > 0 && (
           <section className="registry-panel">
             <div className="section-heading">
-              <p className="eyebrow">Phase 2</p>
               <h2>Playlist Registry</h2>
             </div>
 
@@ -356,7 +349,6 @@ function App() {
         {activeTrack && (
           <aside className="detail-card">
             <div className="section-heading">
-              <p className="eyebrow">Phase 3</p>
               <h2>Active Track</h2>
             </div>
 
