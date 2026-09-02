@@ -1,4 +1,10 @@
-import { useState } from 'react'
+import {
+  flexRender,
+  getCoreRowModel,
+  getPaginationRowModel,
+  useReactTable,
+} from '@tanstack/react-table'
+import { useEffect, useMemo, useState } from 'react'
 import './App.css'
 
 const genres = ['Pop', 'Rock', 'Indie', 'Jazz']
@@ -48,6 +54,63 @@ function App() {
   const [form, setForm] = useState(blankTrack)
   const [tracks, setTracks] = useState([])
   const [errors, setErrors] = useState({})
+  const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 4 })
+  const [roleFilter, setRoleFilter] = useState('All')
+  const [activeTrackId, setActiveTrackId] = useState(null)
+  const [activeTrack, setActiveTrack] = useState(null)
+
+  const columns = useMemo(
+    () => [
+      {
+        accessorKey: 'title',
+        header: 'Track Title',
+      },
+      {
+        accessorKey: 'genre',
+        header: 'Genre',
+      },
+      {
+        accessorKey: 'artist',
+        header: 'Artist',
+      },
+      {
+        accessorKey: 'bpm',
+        header: 'Rating / BPM',
+      },
+      {
+        accessorKey: 'role',
+        header: 'Role',
+      },
+    ],
+    [],
+  )
+
+  const filteredTracks = useMemo(() => {
+    if (roleFilter === 'All') {
+      return tracks
+    }
+
+    return tracks.filter((track) => track.role === roleFilter)
+  }, [roleFilter, tracks])
+
+  const table = useReactTable({
+    data: filteredTracks,
+    columns,
+    state: {
+      pagination,
+    },
+    onPaginationChange: setPagination,
+    getCoreRowModel: getCoreRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+  })
+
+  useEffect(() => {
+    const nextActiveTrack = filteredTracks.find(
+      (track) => track.id === activeTrackId,
+    )
+
+    setActiveTrack(nextActiveTrack ?? filteredTracks[0] ?? null)
+  }, [activeTrackId, filteredTracks])
 
   const updateField = (field, value) => {
     const nextForm = { ...form, [field]: value }
@@ -65,21 +128,33 @@ function App() {
       return
     }
 
-    setTracks((currentTracks) => [
-      ...currentTracks,
-      {
-        id: crypto.randomUUID(),
-        title: form.title.trim(),
-        genre: form.genre,
-        artist: form.artist.trim(),
-        bpm: Number(form.bpm),
-        label: form.label.trim(),
-        role: form.role,
-        addedAt: new Date().toLocaleDateString(),
-      },
-    ])
+    const track = {
+      id: crypto.randomUUID(),
+      title: form.title.trim(),
+      genre: form.genre,
+      artist: form.artist.trim(),
+      bpm: Number(form.bpm),
+      label: form.label.trim(),
+      role: form.role,
+      addedAt: new Date().toLocaleDateString(),
+    }
+
+    setTracks((currentTracks) => [...currentTracks, track])
+    setActiveTrackId(track.id)
+    setPagination((currentPagination) => ({
+      ...currentPagination,
+      pageIndex: Math.floor(tracks.length / currentPagination.pageSize),
+    }))
     setForm(blankTrack)
     setErrors({})
+  }
+
+  const applyRoleFilter = (role) => {
+    setRoleFilter(role)
+    setPagination((currentPagination) => ({
+      ...currentPagination,
+      pageIndex: 0,
+    }))
   }
 
   return (
@@ -185,6 +260,130 @@ function App() {
             Save Track
           </button>
         </form>
+
+        {tracks.length > 0 && (
+          <section className="registry-panel">
+            <div className="section-heading">
+              <p className="eyebrow">Phase 2</p>
+              <h2>Playlist Registry</h2>
+            </div>
+
+            <div className="table-toolbar">
+              {['All', ...roles].map((role) => (
+                <button
+                  className={roleFilter === role ? 'is-active' : ''}
+                  key={role}
+                  type="button"
+                  onClick={() => applyRoleFilter(role)}
+                >
+                  {role}
+                </button>
+              ))}
+            </div>
+
+            <div className="table-wrap">
+              <table>
+                <thead>
+                  {table.getHeaderGroups().map((headerGroup) => (
+                    <tr key={headerGroup.id}>
+                      {headerGroup.headers.map((header) => (
+                        <th key={header.id}>
+                          {flexRender(
+                            header.column.columnDef.header,
+                            header.getContext(),
+                          )}
+                        </th>
+                      ))}
+                    </tr>
+                  ))}
+                </thead>
+                <tbody>
+                  {table.getRowModel().rows.length === 0 ? (
+                    <tr>
+                      <td colSpan={columns.length}>
+                        No tracks match the current role filter.
+                      </td>
+                    </tr>
+                  ) : (
+                    table.getRowModel().rows.map((row) => (
+                      <tr
+                        className={
+                          activeTrack?.id === row.original.id
+                            ? 'selected-row'
+                            : ''
+                        }
+                        key={row.id}
+                        onClick={() => setActiveTrackId(row.original.id)}
+                      >
+                        {row.getVisibleCells().map((cell) => (
+                          <td key={cell.id}>
+                            {flexRender(
+                              cell.column.columnDef.cell,
+                              cell.getContext(),
+                            )}
+                          </td>
+                        ))}
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="pagination-controls">
+              <button
+                type="button"
+                onClick={() => table.previousPage()}
+                disabled={!table.getCanPreviousPage()}
+              >
+                Previous
+              </button>
+              <span>
+                Page {table.getState().pagination.pageIndex + 1} of{' '}
+                {Math.max(table.getPageCount(), 1)}
+              </span>
+              <button
+                type="button"
+                onClick={() => table.nextPage()}
+                disabled={!table.getCanNextPage()}
+              >
+                Next
+              </button>
+            </div>
+          </section>
+        )}
+
+        {activeTrack && (
+          <aside className="detail-card">
+            <div className="section-heading">
+              <p className="eyebrow">Phase 3</p>
+              <h2>Active Track</h2>
+            </div>
+
+            <div className="detail-main">
+              <span className="role-badge">{activeTrack.role}</span>
+              <h3>{activeTrack.title}</h3>
+              <p>
+                {activeTrack.artist} keeps this entry under {activeTrack.label}.
+              </p>
+            </div>
+
+            <dl>
+              <div>
+                <dt>Genre</dt>
+                <dd>{activeTrack.genre}</dd>
+              </div>
+              <div>
+                <dt>Rating / BPM</dt>
+                <dd>{activeTrack.bpm}</dd>
+              </div>
+              <div>
+                <dt>Added</dt>
+                <dd>{activeTrack.addedAt}</dd>
+              </div>
+            </dl>
+          </aside>
+        )}
       </section>
     </main>
   )
